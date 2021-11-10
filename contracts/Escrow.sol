@@ -5,6 +5,7 @@ import "../zeppelin-solidity/contracts/ownership/Ownable.sol";
 contract Escrow {
     //Schedule job with Cron
     //Add checks for bank API being reachable and correct
+    //Buyer needs to be confident that seller has registered the correct account
     //Add CL-EA for value of bank account
 
     //Variables
@@ -15,15 +16,15 @@ contract Escrow {
     bool public buyerConfirm;
     bool public sellerConfirm;
 
-    uint public time; // current time, updated in confirmBalance()
-    uint public timeInit; // UNIX timestamp, initiated upon completion of AWAITING_FUNDS
-    uint public timeLock; // UNIX time; 1 Week = 604800
+    uint public time;       // current time, updated in confirmBalance()
+    uint public timeInit;   // UNIX timestamp, initiated upon completion of AWAITING_FUNDS
+    uint public timeLock;   // UNIX time; 1 Week = 604800, MAX is <90 days due to open banking laws
 
-    uint public price;
-    uint public tinkPrice; // price retrieved by CL-EA
+    uint public price;      // fiat price agreed to by seller and buyer for sale of funds
+    uint public tinkPrice;  // fiat price retrieved by CL-EA from sellers bank account
 
-    uint public funds;
-    uint public collateral;
+    uint public funds;      // amount of tokens for sale
+    uint public collateral; // percentage amount of funds held as collateral
 
     address payable public buyer;
     address payable public seller;
@@ -71,6 +72,7 @@ contract Escrow {
         require(currentState == State.AWAITING_COLLATERAL, "Already collateralized");
         require(msg.value == collateral, "Wrong collateral amount");
         currentState = State.AWAITING_FUNDS;
+        //Consider adding another timer here
     }
 
     function depositFunds() onlySeller public payable {// Seller deposits funds
@@ -82,12 +84,13 @@ contract Escrow {
 
     function confirmBalance() {// Calls external adapter to get bank balance
         require(currentState == State.AWAITING_FULFILLMENT, "Cannot settle");
-        tinkPrice = ExternalAdapter(tinkLink);
+        time = 
         if (time >= timeInit + timeLock) { // time limit exceeded, seller gets funds and collateral
             seller.transfer(collateral);
             seller.transfer(funds);
             currentState = State.FINISHED;
         }
+        tinkPrice = ExternalAdapter(tinkLink);
         if (tinkPrice >= price) // succesful payout of funds and collateral
             buyer.transfer(collateral);
             buyer.transfer(funds);
