@@ -1,6 +1,5 @@
 pragma solidity ^0.8.0;
 
-import "../zeppelin-solidity/contracts/ownership/Ownable.sol";
 
 contract Escrow {
     //Schedule job with Cron
@@ -43,7 +42,6 @@ contract Escrow {
     modifier escrowNotStarted(){
         require(currentState == State.NOT_INITIATED);
         _;
-
     }
 
     //Functions
@@ -82,9 +80,9 @@ contract Escrow {
         timeInit = 1636309800; // Get this from offchain
     }
 
-    function confirmBalance() {// Calls external adapter to get bank balance
+    function confirmBalance() public payable {// Calls external adapter to get bank balance
         require(currentState == State.AWAITING_FULFILLMENT, "Cannot settle");
-        time = 
+        time = getTime(); // get time from CL-node ?
         if (time >= timeInit + timeLock) { // time limit exceeded, seller gets funds and collateral
             seller.transfer(collateral);
             seller.transfer(funds);
