@@ -51,7 +51,7 @@ contract Escrow {
         timeLock = _timeLock;
         price = _price; // SEK, USD ?
         funds = _funds; // LINK, ETHER ?
-        collateral = funds * 0.01; // 1% deposit
+        collateral = funds; // 100% deposit -> fix to be a percentage
     }
 
     function initContract() escrowNotStarted public {// First called by Seller, then by Buyer
@@ -80,6 +80,15 @@ contract Escrow {
         timeInit = 1636309800; // Get this from offchain
     }
 
+    function requestTinkBalance() public onlyBuyer {// Buyer queries sellers bank account to verify payment
+    // This should be called by the node operator
+
+    }
+
+    function getTime() public {// Get unix timestamp from offchain
+
+    }
+
     function confirmBalance() public payable {// Calls external adapter to get bank balance
         require(currentState == State.AWAITING_FULFILLMENT, "Cannot settle");
         time = getTime(); // get time from CL-node ?
@@ -88,7 +97,7 @@ contract Escrow {
             seller.transfer(funds);
             currentState = State.FINISHED;
         }
-        tinkPrice = ExternalAdapter(tinkLink);
+        tinkPrice = requestTinkBalance();
         if (tinkPrice >= price) // succesful payout of funds and collateral
             buyer.transfer(collateral);
             buyer.transfer(funds);
