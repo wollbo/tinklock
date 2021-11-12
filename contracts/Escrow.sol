@@ -8,6 +8,7 @@ contract Escrow {
     //Add CL-EA for value of bank account
 
     //Variables
+    //Add another state 'AWAITING_AUTHENTICATION'?
     enum State {NOT_INITIATED, AWAITING_COLLATERAL, AWAITING_FUNDS, AWAITING_FULFILLMENT, FINISHED}
 
     State public currentState;
@@ -80,9 +81,9 @@ contract Escrow {
         timeInit = 1636309800; // Get this from offchain
     }
 
-    function requestTinkBalance() public onlyBuyer {// Buyer queries sellers bank account to verify payment
+    function requestTinkBalance() public {// Buyer queries sellers bank account to verify payment
     // This should be called by the node operator
-
+        
     }
 
     function getTime() public {// Get unix timestamp from offchain

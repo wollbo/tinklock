@@ -268,7 +268,7 @@ if account: # only this part is strictly necessary for external adapter
     
     data_url = 'https://api.tink.com/data/v2/'
     account = list_accounts(data_url, user_access_token).json()["accounts"][-1] # last account
-    #print(json.dumps(account, indent=3))
+    print(json.dumps(account, indent=3))
     value = json_parse(account, path=['balances', 'booked', 'amount', 'value'])
     scaled_value = int(value["unscaledValue"]) / (10 ** int(value["scale"]))
     print(str(scaled_value) + ' SEK')
