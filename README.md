@@ -35,9 +35,9 @@ decentralized escrow utilizing open banking api
 1. Buyer deposits asset collateral to SC through depositCollateral(), SC moves from State 'AWAITING_COLLATERAL' to 'AWAITING_FUNDS'
 2. Seller deposits funds to SC through depositFunds(), SC moves from  State 'AWAITING_FUNDS' to 'AWAITING_FULFILLMENT'
 3. Buyer deposits fiat to sellers bank account (Off-chain, communicated with app?)
-4. Someone (Keeper?) calls confirmBalance (loophole- Seller can empty fiat account before Buyer is able to call the function, fiat account should be locked)
-5a. if tinkPrice >= price, SC pays out funds and collateral to Buyer, SC moves from State 'AWAITING_FULFILLMENT' to 'FINISHED'
-5b. if time >= timeInit + timeLock, SC pays out funds and collateral to Seller, SC moves from State 'AWAITING_FULFILLMENT' to 'FINISHED'
+4. The function confirmBalance() is called (by keeper) until either condition is triggered  
+5. A) if tinkPrice >= price, SC pays out funds and collateral to Buyer, SC moves from State 'AWAITING_FULFILLMENT' to 'FINISHED'
+5. B) if time >= timeInit + timeLock, SC pays out funds and collateral to Seller, SC moves from State 'AWAITING_FULFILLMENT' to 'FINISHED'
 
 
 ## improvements
