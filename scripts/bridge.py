@@ -23,12 +23,18 @@ class Bridge(object):
         self.session.mount('http://', adapter)
         self.session.mount('https://', adapter)
 
-    def request(self, url, params={}, headers={}, timeout=15):
+    def request(self, url, method='get', params={}, headers={}, timeout=15):
         try:
-            return self.session.get(url,
-                                    params=params,
-                                    headers=headers,
-                                    timeout=timeout)
+            if method == 'get':
+                return self.session.get(url,
+                                        params=params,
+                                        headers=headers,
+                                        timeout=timeout)
+            elif method == 'post':
+                return self.session.post(url,
+                                        data=params,
+                                        headers=headers,
+                                        timeout=timeout)
         except Exception as e:
             raise e
 

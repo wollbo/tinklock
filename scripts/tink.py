@@ -195,7 +195,7 @@ if ping:
     url = 'https://api.tink.com/api/v1/monitoring/ping'
     r = requests.get(url)
 
-if user:
+if user: # move this part to adapter 
     if not BEARER_TOKEN: # used for creating both user and authorization code
         bearer = create_bearer_token(
             BASE_URL, 
@@ -265,11 +265,15 @@ if account: # only this part is strictly necessary for external adapter
         client_secret=TINK_CLIENT_SECRET,
         grant_type='authorization_code'
     )
-    
-    data_url = 'https://api.tink.com/data/v2/'
-    account = list_accounts(data_url, user_access_token).json()["accounts"][-1] # last account
-    print(json.dumps(account, indent=3))
-    value = json_parse(account, path=['balances', 'booked', 'amount', 'value'])
-    scaled_value = int(value["unscaledValue"]) / (10 ** int(value["scale"]))
-    print(str(scaled_value) + ' SEK')
-    #should return {"data": {"value": scaled_value}}
+
+def return_balance(url='https://api.tink.com/data/v2/', req='list'):
+    if req == 'list':
+        account = list_accounts(url, user_access_token).json()["accounts"][-1] # last account
+        value = json_parse(account, path=['balances', 'booked', 'amount', 'value'])
+        scaled_value = int(value["unscaledValue"]) / (10 ** int(value["scale"]))
+    else:
+        scaled_value = None
+    return scaled_value
+
+value = return_balance()
+print(value)
