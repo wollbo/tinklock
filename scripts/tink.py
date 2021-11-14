@@ -11,12 +11,26 @@ account = True
 
 
 load_dotenv()
+BASE_URL = 'https://api.tink.com/api/v1/'
+
 
 def empty_to_none(field):
     value = os.getenv(field)
     if value is None or len(value) == 0:
         return None
     return value
+
+
+def load_tinkenv():
+    load_dotenv()
+    _env = [
+        'TINK_CLIENT_ID',
+        'TINK_CLIENT_SECRET', 
+        'ACTOR_CLIENT_ID',
+        'USER_ID',
+        'CREDENTIALS_ID'
+        ]
+    return {e: empty_to_none(e) for e in _env}
 
 
 def append_to_env(**kwargs): # extend to read .env first
@@ -32,19 +46,6 @@ def json_parse(json_object, path):
         json_object = json_object[item]
     return json_object
 
-
-# Required .env variables obtained from Tink
-TINK_CLIENT_ID = empty_to_none('TINK_CLIENT_ID')
-TINK_CLIENT_SECRET = empty_to_none('TINK_CLIENT_SECRET')
-ACTOR_CLIENT_ID = empty_to_none('ACTOR_CLIENT_ID') # Tink open banking identifier
-
-# Generated variables using Tink client credentials
-BEARER_TOKEN = empty_to_none('BEARER_TOKEN')
-USER_ID = empty_to_none('USER_ID')
-CREDENTIALS_ID =  empty_to_none('CREDENTIALS_ID')
-USER_AUTH_CODE = empty_to_none('USER_AUTH_CODE') # one-time code
-
-BASE_URL = 'https://api.tink.com/api/v1/'
 
 def construct_url(
     url='https://api.tink.com/api/v1/oauth/token', 
@@ -65,9 +66,7 @@ def create_bearer_token(base_url, **kwargs):
         'Content-Type': 'application/x-www-form-urlencoded',
     }
     data = {key: value for key, value in kwargs.items()}
-    r = requests.post(url, headers=headers, data=data)
-    assert(str(r.status_code).startswith('2'), r.text)
-    return r.json()["access_token"]
+    return url, headers, data
 
 
 def create_tink_user(base_url, bearer_token, **kwargs):
@@ -77,9 +76,7 @@ def create_tink_user(base_url, bearer_token, **kwargs):
         'Content-Type': 'application/json; charset=utf-8' 
     }
     data = {key: value for key, value in kwargs.items()}
-    r = requests.post(url, headers=headers, json=data) # must be passed as json
-    assert(str(r.status_code).startswith('2'), r.text)
-    return r.json()["user_id"]
+    return url, headers, data
 
 
 def create_authorization(base_url, bearer_token, **kwargs):
@@ -89,9 +86,7 @@ def create_authorization(base_url, bearer_token, **kwargs):
         'Content-Type': 'application/x-www-form-urlencoded'
     }
     data = {key: value for key, value in kwargs.items()}
-    r = requests.post(url, headers=headers, data=data)
-    assert(str(r.status_code).startswith('2'), r.text)
-    return r.json()["code"]
+    return url, headers, data
 
 
 def create_delegated_authorization(base_url, bearer_token, **kwargs):
@@ -102,14 +97,22 @@ def create_delegated_authorization(base_url, bearer_token, **kwargs):
         'Content-Type': 'application/x-www-form-urlencoded'
     }
     data = {key: value for key, value in kwargs.items()}
-    r = requests.post(url, headers=headers, data=data)
-    assert(str(r.status_code).startswith('2'), r.text)
-    return r.json()["code"]
+    return url, headers, data
+
+
+def refresh_credentials(base_url, bearer_token, credentials_id):
+    """Prepares request for automated credentials refresh"""
+    url = base_url + f'credentials/{credentials_id}/refresh'
+    headers = {
+        'Authorization': 'Bearer ' + bearer_token,
+        'Content-Type': 'application/json; charset=utf-8'
+    }
+    return url, headers
 
 
 ### TINK LINK USER INTERACTION FUNCTIONS ###
 
-def create_credentials(client_id, auth_code):
+def create_credentials_link(client_id, auth_code):
     base_url = 'https://link.tink.com/1.0/credentials/add'
     data = {
         "client_id": client_id,
@@ -125,7 +128,7 @@ def create_credentials(client_id, auth_code):
     return url
 
 
-def refresh_credentials(client_id, auth_code, credentials_id):
+def refresh_credentials_link(client_id, auth_code, credentials_id):
     base_url = 'https://link.tink.com/1.0/credentials/refresh'
     data = {
         "client_id": client_id,
@@ -142,7 +145,7 @@ def refresh_credentials(client_id, auth_code, credentials_id):
     return url
 
 
-def authenticate_credentials(client_id, auth_code, credentials_id):
+def authenticate_credentials_link(client_id, auth_code, credentials_id):
     base_url = 'https://link.tink.com/1.0/credentials/authenticate'
     data = {
         "client_id": client_id,
@@ -189,91 +192,15 @@ def get_balance(base_url, bearer_token, id):
     }
     r = requests.get(url, headers=headers)
     return r
+  
 
-
-if ping:
-    url = 'https://api.tink.com/api/v1/monitoring/ping'
-    r = requests.get(url)
-
-if user: # move this part to adapter 
-    if not BEARER_TOKEN: # used for creating both user and authorization code
-        bearer = create_bearer_token(
-            BASE_URL, 
-            client_id=TINK_CLIENT_ID,
-            client_secret=TINK_CLIENT_SECRET,
-            grant_type='client_credentials',
-            scope='authorization:grant,user:create' # best practices: should be separated into two
-        )
-        #append_to_env('BEARER_TOKEN') = bearer expires every 30 min
-
-    if not USER_ID:
-        USER_ID = create_tink_user(
-            BASE_URL,
-            bearer,
-            locale='en_US',
-            market='SE'
-        )
-        append_to_env(USER_ID=USER_ID)
-
-    if not USER_AUTH_CODE:
-        USER_AUTH_CODE = create_delegated_authorization(
-            BASE_URL,
-            bearer,
-            user_id=USER_ID,
-            id_hint='hackathon_user',
-            actor_client_id=ACTOR_CLIENT_ID,
-            scope='authorization:grant,authorization:read,credentials:read,credentials:refresh,credentials:write,providers:read,user:read'
-        )
-        #append_to_env(USER_AUTH_CODE=USER_AUTH_CODE) can only be used once
-    
-if access:
-    url = create_credentials(
-        client_id=TINK_CLIENT_ID, 
-        auth_code=USER_AUTH_CODE
-    )
-    print(url) # consider having the user register the credentials_id through SC
-
-if refresh: # credentials need to be refreshed after each transaction, onlyBuyer EA?
-    url = refresh_credentials(
-        client_id=TINK_CLIENT_ID, 
-        auth_code=USER_AUTH_CODE,
-        credentials_id=CREDENTIALS_ID
-    )
-    print(url)
-
-if account: # only this part is strictly necessary for external adapter 
-
-    access_token = create_bearer_token(
-        BASE_URL, 
-        client_id=TINK_CLIENT_ID,
-        client_secret=TINK_CLIENT_SECRET,
-        grant_type='client_credentials',
-        scope='authorization:grant'
-    )
-
-    authorization_code = create_authorization(
-        BASE_URL,
-        access_token,
-        user_id=USER_ID,
-        scope='accounts:read,balances:read,transactions:read,provider-consents:read'
-    )
-
-    user_access_token = create_bearer_token( # this should ideally return the whole json object
-        BASE_URL,
-        code=authorization_code,
-        client_id=TINK_CLIENT_ID,
-        client_secret=TINK_CLIENT_SECRET,
-        grant_type='authorization_code'
-    )
-
-def return_balance(url='https://api.tink.com/data/v2/', req='list'):
+def return_balance(user_access_token, req='list'):
+    base_url = 'https://api.tink.com/data/v2/'
     if req == 'list':
-        account = list_accounts(url, user_access_token).json()["accounts"][-1] # last account
+        account = list_accounts(base_url, user_access_token).json()["accounts"][-1] # last account
         value = json_parse(account, path=['balances', 'booked', 'amount', 'value'])
         scaled_value = int(value["unscaledValue"]) / (10 ** int(value["scale"]))
     else:
         scaled_value = None
     return scaled_value
 
-value = return_balance()
-print(value)
