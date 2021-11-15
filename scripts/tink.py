@@ -10,10 +10,6 @@ refresh = False
 account = True
 
 
-load_dotenv()
-BASE_URL = 'https://api.tink.com/api/v1/'
-
-
 def empty_to_none(field):
     value = os.getenv(field)
     if value is None or len(value) == 0:
@@ -61,7 +57,7 @@ def construct_url(
 
 
 def create_bearer_token(base_url, **kwargs):
-    url = base_url + 'oauth/token'
+    url = base_url + 'api/v1/oauth/token'
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
     }
@@ -70,7 +66,7 @@ def create_bearer_token(base_url, **kwargs):
 
 
 def create_tink_user(base_url, bearer_token, **kwargs):
-    url = base_url + 'user/create'
+    url = base_url + 'api/v1/user/create'
     headers = {
         'Authorization': 'Bearer ' + bearer_token,
         'Content-Type': 'application/json; charset=utf-8' 
@@ -80,7 +76,7 @@ def create_tink_user(base_url, bearer_token, **kwargs):
 
 
 def create_authorization(base_url, bearer_token, **kwargs):
-    url = base_url + 'oauth/authorization-grant'
+    url = base_url + 'api/v1/oauth/authorization-grant'
     headers = {
         'Authorization': 'Bearer ' + bearer_token,
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -102,12 +98,12 @@ def create_delegated_authorization(base_url, bearer_token, **kwargs):
 
 def refresh_credentials(base_url, bearer_token, credentials_id):
     """Prepares request for automated credentials refresh"""
-    url = base_url + f'credentials/{credentials_id}/refresh'
+    url = base_url + f'api/v1/credentials/{credentials_id}/refresh'
     headers = {
         'Authorization': 'Bearer ' + bearer_token,
         'Content-Type': 'application/json; charset=utf-8'
     }
-    return url, headers
+    return url, headers, {}
 
 
 ### TINK LINK USER INTERACTION FUNCTIONS ###
@@ -164,43 +160,21 @@ def authenticate_credentials_link(client_id, auth_code, credentials_id):
 
 ### GET REQUESTS ###
 
-def get_user(base_url, bearer_token):
-    url = base_url + 'user'
+def get_consents(base_url, bearer_token):
+    url = base_url + 'api/v1/provider-consents'
     headers = {
         'Authorization': 'Bearer ' + bearer_token,
-        'Content-Type': 'application/json; charset=utf-8' 
+        'Content-Type': 'application/json; charset=utf-8'
     }
-    r = requests.get(url, headers=headers)
-    return r
+    return url, headers, {}
 
 
 def list_accounts(base_url, bearer_token):
-    url = base_url + 'accounts'
+    url = base_url + 'data/v2/accounts'
     headers = {
         'Authorization': 'Bearer ' + bearer_token,
         'Content-Type': 'application/json; charset=utf-8' 
     }
-    r = requests.get(url, headers=headers)
-    return r
+    return url, headers, {}
 
-
-def get_balance(base_url, bearer_token, id):
-    url = base_url + f'accounts/{id}/balances'
-    headers = {
-        'Authorization': 'Bearer ' + bearer_token,
-        'Content-Type': 'application/json; charset=utf-8' 
-    }
-    r = requests.get(url, headers=headers)
-    return r
-  
-
-def return_balance(user_access_token, req='list'):
-    base_url = 'https://api.tink.com/data/v2/'
-    if req == 'list':
-        account = list_accounts(base_url, user_access_token).json()["accounts"][-1] # last account
-        value = json_parse(account, path=['balances', 'booked', 'amount', 'value'])
-        scaled_value = int(value["unscaledValue"]) / (10 ** int(value["scale"]))
-    else:
-        scaled_value = None
-    return scaled_value
 

@@ -305,8 +305,8 @@ if refresh: # credentials need to be refreshed after each transaction, onlyBuyer
 
     url, headers = refresh_credentials_auto(
         BASE_URL,
-        bearer=user_access_token,
-        credentials_id=CREDENTIALS_ID
+        user_access_token,
+        CREDENTIALS_ID
     )
     r = requests.post(url, headers=headers)
     print(r)
@@ -370,7 +370,8 @@ if account: # only this part is strictly necessary for external adapter
 
 def return_balance(url='https://api.tink.com/data/v2/', req='list'):
     if req == 'list':
-        account = list_accounts(url, user_access_token).json()["accounts"][-1] # last account
+        account = list_accounts(url, user_access_token).json()["accounts"] # last account
+        account = account[-1]
         value = json_parse(account, path=['balances', 'booked', 'amount', 'value'])
         scaled_value = int(value["unscaledValue"]) / (10 ** int(value["scale"]))
     else:
