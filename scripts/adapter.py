@@ -1,5 +1,6 @@
 from bridge import Bridge
 import tink
+import sys
 
 class Adapter:
     base_url = 'https://api.tink.com/' # add api/ to all tink function urls
@@ -7,6 +8,11 @@ class Adapter:
     #and the 'credentialsId' should be passed to the bridge operators .env
     #TODO: investigate how passing function as parameter affects flow
     #currently we get oauth.no_auth_method_provided
+    """
+    To test ping request, run the following in bash: curl -v POST http://192.168.1.162:8080/ 
+    -H "Content-Type: application/json" -d '{"id": 0, "data": {"request": "ping"}}'
+    """
+    
     to_params = ['request']  # valid calls ['ping', 'balance']
     re_params = [''] # how does this work, really? implement properly
 
@@ -66,10 +72,15 @@ class Adapter:
         interpreting the response and returning the result for the next step.
         """
         self.result = {} # consider resetting here, could turn ugly otherwise
-        self.url, self.params, self.headers = func(*args, **kwargs)
+        self.url, self.headers, self.params = func(*args, **kwargs)
         self.re_param = _re_param
         self.create_request(method=method)
-        return self.result["result"]
+
+        try:
+            return self.result["result"]
+        except Exception as e:
+            print(self.result["error"])
+            raise e
 
 
     def ping_request(self):
@@ -131,7 +142,7 @@ class Adapter:
                                 client_secret=self.TINK_CLIENT_SECRET,
                                 grant_type='authorization_code'
                             )
-
+        print(user_access_token)
         status_code = self.wrap_request(
                         tink.refresh_credentials,
                         "status_code",
@@ -140,7 +151,7 @@ class Adapter:
                         self.CREDENTIALS_ID,
                         method='post',
                     )
-
+        print(status_code)
         assert(status_code == 204, 'Wrong status code!')
         
         status = ''
@@ -163,6 +174,7 @@ class Adapter:
                                     client_access_token,
                                     method='post',
                                     user_id=self.USER_ID,
+                                    id_hint='hackathon_user',
                                     scope='authorization:grant,authorization:read,credentials:read,credentials:refresh,credentials:write,providers:read,user:read,provider-consents:read'
                                 )
         

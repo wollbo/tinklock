@@ -9,7 +9,7 @@ import time
 ## TEST SCRIPT FOR VERIFYING TINK BEHAVIOUR WITHOUT BRIDGE ##
 
 ping = False
-user = True
+user = False
 access = False
 refresh = True
 account = True
@@ -83,6 +83,9 @@ def create_bearer_token(base_url, **kwargs):
         'Content-Type': 'application/x-www-form-urlencoded',
     }
     data = {key: value for key, value in kwargs.items()}
+    print(url)
+    print(headers)
+    print(data)
     r = requests.post(url, headers=headers, data=data)
     assert(str(r.status_code).startswith('2'), r.text)
     return r.json()["access_token"]
@@ -310,6 +313,7 @@ if refresh: # credentials need to be refreshed after each transaction, onlyBuyer
     )
     r = requests.post(url, headers=headers)
     print(r)
+    print(r.status_code)
     assert(r.status_code == 204, 'Wrong status code!')
     status=''
     while status != 'UPDATED': # consider creating an outer function for this 
