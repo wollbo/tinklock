@@ -338,7 +338,6 @@ if refresh: # credentials need to be refreshed after each transaction, onlyBuyer
     )
     r = requests.post(url, headers=headers)
     print(r)
-    print(r.status_code)
     assert(r.status_code == 204, 'Wrong status code!')
     status=''
     while status != 'UPDATED': # consider creating an outer function for this 

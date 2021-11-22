@@ -142,6 +142,23 @@ def refresh_credentials_link(client_id, auth_code, credentials_id):
     return url
 
 
+def update_consent_link(client_id, auth_code, credentials_id):
+    base_url = 'https://link.tink.com/1.0/transactions/update-consent'
+    data = {
+        "client_id": client_id,
+        "redirect_uri": 'https://console.tink.com/callback',
+        "authorization_code": auth_code,
+        "market": 'SE',
+        "credentials_id": credentials_id
+    }
+    url = construct_url(
+        url=base_url,
+        ending='update-consent',
+        **data
+    )
+    return url
+
+
 def authenticate_credentials_link(client_id, auth_code, credentials_id):
     base_url = 'https://link.tink.com/1.0/credentials/authenticate'
     data = {
