@@ -24,7 +24,8 @@ def load_tinkenv():
         'TINK_CLIENT_SECRET', 
         'ACTOR_CLIENT_ID',
         'USER_ID',
-        'CREDENTIALS_ID'
+        'CREDENTIALS_ID',
+        'IBAN'
         ]
     return {e: empty_to_none(e) for e in _env}
 

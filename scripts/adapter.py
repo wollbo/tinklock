@@ -54,10 +54,14 @@ class Adapter:
             params = self.params
             headers = self.headers
             response = self.bridge.request(self.url, method, params, headers)
-            data = response.json()
-            self.result = data[self.re_param]
-            #data["result"] = self.result # superfluous?
-            self.result_success(data)
+            if response.status_code == 204:
+                data = response
+                self.result = response.status_code
+                self.result_success(data)
+            else:
+                data = response.json()
+                self.result = data[self.re_param]
+                self.result_success(data)
         except Exception as e:
             print(response.text)
             self.result_error(e)
@@ -142,7 +146,7 @@ class Adapter:
                                 client_secret=self.TINK_CLIENT_SECRET,
                                 grant_type='authorization_code'
                             )
-        print(user_access_token)
+
         status_code = self.wrap_request(
                         tink.refresh_credentials,
                         "status_code",
@@ -151,7 +155,7 @@ class Adapter:
                         self.CREDENTIALS_ID,
                         method='post',
                     )
-        print(status_code)
+
         assert(status_code == 204, 'Wrong status code!')
         
         status = ''
@@ -188,7 +192,7 @@ class Adapter:
                                     client_secret=self.TINK_CLIENT_SECRET,
                                     grant_type='authorization_code'
                                 )
-
+            
             consents = self.wrap_request(
                             tink.get_consents,
                             "providerConsents",

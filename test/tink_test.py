@@ -9,7 +9,7 @@ import time
 ## TEST SCRIPT FOR VERIFYING TINK BEHAVIOUR WITHOUT BRIDGE ##
 
 ping = False
-user = False
+user = True
 access = False
 refresh = True
 account = True
@@ -173,6 +173,23 @@ def refresh_credentials_auto(base_url, bearer, credentials_id):
     return url, headers
 
 
+def update_consent(client_id, auth_code, credentials_id):
+    base_url = 'https://link.tink.com/1.0/transactions/update-consent'
+    data = {
+        "client_id": client_id,
+        "redirect_uri": 'https://console.tink.com/callback',
+        "authorization_code": auth_code,
+        "market": 'SE',
+        "credentials_id": credentials_id
+    }
+    url = construct_url(
+        url=base_url,
+        ending='update-consent',
+        **data
+    )
+    return url
+
+
 def authenticate_credentials(client_id, auth_code, credentials_id):
     base_url = 'https://link.tink.com/1.0/credentials/authenticate'
     data = {
@@ -264,8 +281,16 @@ if user: # move this part to adapter
             actor_client_id=ACTOR_CLIENT_ID,
             scope='authorization:grant,authorization:read,credentials:read,credentials:refresh,credentials:write,providers:read,user:read,provider-consents:read'
         )
-        #append_to_env(USER_AUTH_CODE=USER_AUTH_CODE) can only be used once
-    
+
+        url = update_consent( # can expire
+            TINK_CLIENT_ID, 
+            USER_AUTH_CODE, 
+            CREDENTIALS_ID
+        )
+
+        sys.exit(url)
+
+
 if access:
     url = create_credentials(
         client_id=TINK_CLIENT_ID, 
@@ -343,8 +368,26 @@ if refresh: # credentials need to be refreshed after each transaction, onlyBuyer
         r = requests.get(url, headers=headers)
         consents = r.json()["providerConsents"]
         status = [cons["status"] for cons in consents if cons["credentialsId"] == CREDENTIALS_ID][0]
-        time.sleep(1) # this takes 2-3 seconds to update!
+        print(status)
+        time.sleep(2) # this takes 2-3 seconds to update!
+        if status == 'AWAITING_MOBILE_BANKID_AUTHENTICATION':
+            client_access_token = create_bearer_token(
+                BASE_URL, 
+                client_id=TINK_CLIENT_ID,
+                client_secret=TINK_CLIENT_SECRET,
+                grant_type='client_credentials',
+                scope='authorization:grant' # best practices: should be separated into two
+            )
 
+            authorization_code = create_delegated_authorization(
+                BASE_URL,
+                client_access_token,
+                user_id=USER_ID,
+                id_hint='hackathon_user',
+                scope='authorization:grant,authorization:read,credentials:read,credentials:refresh,credentials:write,providers:read,user:read,provider-consents:read'
+            )
+            print(url)
+            sys.exit('NEEDS REAUTHENTICATION')
     print('UPDATED!')
 
 if account: # only this part is strictly necessary for external adapter 
