@@ -9,14 +9,7 @@ decentralized escrow utilizing open banking api
 2. Enable continuous access
 3. Save 'client_id', 'client_secret' and 'actor_client_id' to .env
 4. Set up bridge and external adapter
-
-## SC initialization
-
-1. Seller lists offer (app)
-2. Buyer notifies Seller (app)
-3. Buyer and Seller both call initContract (through app)
-4. (Contract waits until seller has completed tink authentication with node operator) 
-
+5. Seller completes tink authentication with bridge
 
 ## tink authentication
 
@@ -29,15 +22,24 @@ decentralized escrow utilizing open banking api
 7. Callback to app/Seller registers 'credentialsId' with node operator
 8. Node operator adds 'credentialsId' and 'user_id' to .env
 
+## API consumer
+
+1. Node operator deploys TinkConsumer.sol which is linked to Sellers bank account
+2. Seller funds TinkConsumer contract with LINK
+
+## SC initialization
+
+1. Seller lists offer
+2. Buyer notifies Seller 
+3. Buyer and Seller both call initContract
+
 ## SC flow
 
-0. (SC moves from State 'AWAITING_AUTHENTICATION' to 'AWAITING_COLLATERAL')
-1. Buyer deposits asset collateral to SC through depositCollateral(), SC moves from State 'AWAITING_COLLATERAL' to 'AWAITING_FUNDS'
-2. Seller deposits funds to SC through depositFunds(), SC moves from  State 'AWAITING_FUNDS' to 'AWAITING_FULFILLMENT'
-3. Buyer deposits fiat to sellers bank account (Off-chain, communicated with app?)
-4. The function confirmBalance() is called (by keeper) until either condition is triggered  
-5. A) if tinkPrice >= price, SC pays out funds and collateral to Buyer, SC moves from State 'AWAITING_FULFILLMENT' to 'FINISHED'
-5. B) if time >= timeInit + timeLock, SC pays out funds and collateral to Seller, SC moves from State 'AWAITING_FULFILLMENT' to 'FINISHED'
+1. Seller deposits funds to SC through depositFunds(), SC moves from  State 'AWAITING_FUNDS' to 'AWAITING_FULFILLMENT'
+2. Buyer deposits fiat to sellers bank account (Off-chain)
+4. The function confirmBalance() is called until either condition is triggered  
+5. tinkPrice >= price, SC pays out funds to Buyer, SC moves from State 'AWAITING_FULFILLMENT' to 'FINISHED'
+6. (to be implemented; timer/timeout)
 
 
 ## improvements
@@ -46,9 +48,9 @@ decentralized escrow utilizing open banking api
 - integration with tink authentication, move credentials_id automatically to node
 - add separate contract state awaiting tink authentication, node operator should trigger this event after account has been verified 
 - in this stage the node operator should also verify that the bank account is reachable
-- buyer and seller should deposit funds through application interface
+- buyer should deposit collateral to avoid spoofing
+- add a timer to avoid credentials timeout and funds being stuck forever
+- buyer and seller should deposit collateral and funds through application interface
 - if seller never deposits funds, collateral should be withdrawable by buyer
 - buyer should receive sellers IBAN through the app
-- buyer should optionally interact through a tink link as well, such that the node operator can trigger confirmBalance through an external initiator
 - seller must not be able to withdraw received fiat before confirmBalance is called
-- confirmBalance should perhaps be called by a keeper
