@@ -3,12 +3,6 @@ import requests
 import json
 import os
 
-ping = False
-user = True
-access = False
-refresh = False
-account = True
-
 
 def empty_to_none(field):
     value = os.getenv(field)
