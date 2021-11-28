@@ -1,6 +1,7 @@
 # tinklock
 cl-hackathon fall 2021 
 decentralized escrow utilizing open banking api
+![alt text](https://github.com/wollbo/tinklock/blob/main/logo.png?raw=true)
 
 
 ## authentication setup for node operator
