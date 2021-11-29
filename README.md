@@ -40,7 +40,7 @@ decentralized escrow utilizing open banking api
 1. Seller deposits funds to SC through depositFunds(), SC moves from  State 'AWAITING_FUNDS' to 'AWAITING_FULFILLMENT'
 2. Buyer deposits fiat to sellers bank account (Off-chain)
 4. The function confirmBalance() is called until either condition is triggered  
-5. tinkPrice >= price, SC pays out funds to Buyer, SC moves from State 'AWAITING_FULFILLMENT' to 'FINISHED'
+5. tinkBalance >= (initBalance + price), SC pays out funds to Buyer, SC moves from State 'AWAITING_FULFILLMENT' to 'FINISHED'
 6. (to be implemented; timer/timeout)
 
 
